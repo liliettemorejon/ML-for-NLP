@@ -118,8 +118,8 @@ The HR master list and visit schedule are made-up stand-ins (`assets/reference_d
 | Name | Role |
 | --- | --- |
 | Liliette Morejon Averhoff | Data |
-| _name_ | _role_ |
-| _name_ | _role_ |
+| Priscila | Lead Product |
+| Yasori | QA |
 
 ## Sources and AI use
 
