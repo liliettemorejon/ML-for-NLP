@@ -19,13 +19,15 @@ Options:
 - `--no-reference-checks` for a log from outside our made-up HR data (for example the instructor's): skips the HR list, visit schedule and 60-day checks; every other rule still runs.
 - `--as-of YYYY-MM-DD` to set the date used as "today" for the 60-day rule.
 
-**Full notebook (Google Colab):** training, synthetic logs and the evaluation.
+**Full notebook (runs locally, no Colab):** training, synthetic logs, the evaluation, the four real forms and an upload button for your own photo.
 
-1. Open `notebooks/MNIST_Final_Group4.ipynb` in Google Colab and save a copy to your own Drive (File > Save a copy in Drive).
-2. Runtime > Change runtime type > **T4 GPU**.
-3. Runtime > **Run all**, and approve the Google Drive pop-up.
+    pip install -r requirements.txt ipykernel ipywidgets pandas matplotlib
 
-The first run takes about 20-30 minutes: it downloads EMNIST, generates 60 test logs, trains both models and runs the evaluation. Everything is saved to `MyDrive/Group4_project`. The photo cell shows an upload button: pick any photo of a filled-in form (JPG, PNG or HEIC). The next cell compares the read against what was written on our test forms.
+1. Open `notebooks/MNIST_Final_Group4.ipynb` in VS Code (with the Jupyter extension).
+2. Pick the kernel **.venv** at the top right.
+3. **Run All**.
+
+The first run downloads EMNIST (~560 MB) into `data/` and trains the baseline model; later runs reuse both. The augmented model is the same `models/char_cnn_aug_best.pt` that `demo.py` uses (set `RETRAIN = True` to train it again). Section 6 reads `samples/ODO_1..4.heic`, compares each read with what was written on the form, and prints a summary of results. Section 7 has an upload button: pick any photo of a filled-in form (JPG, PNG or HEIC).
 
 ## Pipeline
 
