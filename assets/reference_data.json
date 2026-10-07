@@ -1,0 +1,48 @@
+{
+ "_note": "Made-up stand-in for the HR master list and the visit scheduler. Add employees/clients here.",
+ "hr_master": [
+  "AZ5783",
+  "MT4826",
+  "ZQ9081",
+  "LM2984",
+  "RC5107"
+ ],
+ "visit_schedule": {
+  "AZ5783": [
+   "KMR",
+   "PDL",
+   "AVT",
+   "JBS",
+   "WHC"
+  ],
+  "MT4826": [
+   "GEN",
+   "SOL",
+   "TRB",
+   "MXQ"
+  ],
+  "ZQ9081": [
+   "XEY",
+   "FUN",
+   "HOW",
+   "GIZ",
+   "VAL"
+  ],
+  "LM2984": [
+   "DKR",
+   "PSB",
+   "TMC",
+   "TRB",
+   "GEN",
+   "SOL",
+   "MXQ"
+  ],
+  "RC5107": [
+   "KMR",
+   "PDL",
+   "AVT",
+   "JBS",
+   "WHC"
+  ]
+ }
+}
