@@ -1,0 +1,12 @@
+# EMNIST download and generated test logs (560 MB+, rebuilt by the full notebook)
+data/
+
+# Python and editor files
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+.DS_Store
+
+# Photos uploaded during a demo
+samples/uploads/
