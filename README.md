@@ -1,130 +1,91 @@
-# Form ML-7 Mileage Log Reader (ISM 6642, Group 4)
+# Form ML-7 Mileage Log Reader
 
-A prototype that reads handwritten Sabal Coast Home Health mileage logs (Form ML-7) from a phone photo, checks every row against the form's rules, and decides **row by row** what can be auto-posted and what goes to a clerk.
+ISM 6642, Group 4. Reads a handwritten Weekly Field Mileage Log (Form ML-7) from a phone photo and decides, row by row,
+whether to **pay** (`AUTO-POST`) or **send to a clerk** (`REVIEW`).
 
-**Status:** working prototype. Runs end to end on synthetic logs and on a real handwritten form photographed with a phone.
+## Run the demo (one click, nothing to install)
 
-## How to run it
+[![Open the demo in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/liliettemorejon/ML-for-NLP/blob/main/MNIST_Final_Group4_DEMO.ipynb)
 
-**One-command demo (any computer, no Colab):**
+1. Click the badge above (a Google account is the only requirement).
+2. **Runtime > Change runtime type > CPU**. No GPU is needed to read a form.
+3. **Runtime > Run all**. The first cell clones this repo, so there is nothing to download by hand.
+4. In the last cell, click **Choose files** and pick one or several photos of a filled-in Form ML-7
+   (JPG, PNG or iPhone HEIC). Each photo takes a few seconds.
 
-    pip install -r requirements.txt
-    python demo.py samples/your_photo.jpg --save result.png
+For every photo the demo prints the values it read with a confidence for each row, the rules that failed, and the
+decision for each row, followed by a picture of the form (green = OK, orange = fails a rule, red = low confidence,
+blue = changed or confirmed by the rules).
 
-Prints what was read in each row, the AUTO-POST / REVIEW decision for each row, and the reasons. Works with JPG, PNG and iPhone HEIC photos. `--save` writes the straightened form with each read drawn above its box and the decision at the end of each row.
+## How a photo becomes a decision
 
-Before the first run, copy the trained model `char_cnn_aug_best.pt` from Google Drive (`Group4_project`) into `models/`.
+1. **Registration:** match SIFT features against the blank form and straighten the photo onto it.
+2. **Cell extraction:** erase the printed box lines and cut out each handwritten box.
+3. **Normalization:** make each crop look like an EMNIST character (28 x 28, white on black, scaled to [-1, 1]).
+4. **Classification:** a small CNN reads each box (36 classes: digits 0-9 and capitals A-Z); digit boxes may only
+   hold digits and letter boxes only letters.
+5. **Form checks:** the rules below.
+6. **Decision per row:** `AUTO-POST` only if none of the row's checks fail, otherwise `REVIEW`.
 
-Options:
-- `--no-reference-checks` for a log from outside our made-up HR data (for example the instructor's): skips the HR list, visit schedule and 60-day checks; every other rule still runs.
-- `--as-of YYYY-MM-DD` to set the date used as "today" for the 60-day rule.
+### The form checks
 
-**Full notebook (runs locally, no Colab):** training, synthetic logs, the evaluation, the four real forms and an upload button for your own photo.
+- Employee ID is in the HR list.
+- Week ending is a valid date, a Sunday, not in the future, and within the last 60 days.
+- Each trip date falls inside the week ending.
+- The client code is on the employee's visit schedule.
+- Odometer end is after start, and start is not before the previous row's end.
+- Miles equal odometer end minus start; a trip over 300 miles is flagged.
+- Total miles equal the sum of the rows.
+- Any character read with confidence below 0.50 is flagged.
 
-    pip install -r requirements.txt ipykernel ipywidgets pandas matplotlib
+A bad employee ID or week ending sends the whole log to a clerk. A wrong total is blamed on the rows already flagged,
+or on the whole log if none are flagged.
 
-1. Open `notebooks/MNIST_Final_Group4.ipynb` in VS Code (with the Jupyter extension).
-2. Pick the kernel **.venv** at the top right.
-3. **Run All**.
+For mileage digits only, a digit the model was unsure of can be kept or swapped for its next guess when the
+odometer arithmetic confirms it (blue boxes). Dates and client codes are never changed. Set `AUTO_CORRECT = False`
+in the demo's settings cell to turn this off.
 
-The first run downloads EMNIST (~560 MB) into `data/` and trains the baseline model; later runs reuse both. The augmented model is the same `models/char_cnn_aug_best.pt` that `demo.py` uses (set `RETRAIN = True` to train it again). Section 6 reads `samples/ODO_1..4.heic`, compares each read with what was written on the form, and prints a summary of results. Section 7 has an upload button: pick any photo of a filled-in form (JPG, PNG or HEIC).
+## What is in this repo
 
-## Pipeline
+| Path | What it is |
+| --- | --- |
+| `MNIST_Final_Group4_DEMO.ipynb` | The live demo: load the saved model, read photos, check the rules |
+| `MNIST_Final_Group4_FULL_Colab.ipynb` | The full project: EMNIST download, training, synthetic test logs, evaluation, the real forms |
+| `assets/` | Blank Form ML-7, the box positions, and the made-up HR and visit-schedule data |
+| `models/` | Trained weights: `char_cnn_aug_best.pt` (used by the demo) and `char_cnn_best.pt` (baseline) |
+| `samples/` | Photos of made-up, hand-filled forms to try the demo on |
+| `requirements.txt` | Python packages, for running outside Colab |
 
-1. **Registration:** match visual features (SIFT) between the photo and a blank Form ML-7, then straighten the photo onto the blank form.
-2. **Cell extraction:** erase the printed box lines and cut out each box, keeping only ink strokes that reach the middle of the box.
-3. **Normalization:** make every crop look like EMNIST (white on black, fit into 20x20, centered by center of mass in 28x28). The same normalization is used in training and at inference.
-4. **Recognition:** a small CNN reads each box. Output is restricted by field: digit boxes can only be 0-9, letter boxes only A-Z.
-5. **Validation:** check the form's rules (below) and decide AUTO-POST or REVIEW for each row.
+## The full notebook (training and evaluation)
+
+[![Open the full notebook in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/liliettemorejon/ML-for-NLP/blob/main/MNIST_Final_Group4_FULL_Colab.ipynb)
+
+Use a **T4 GPU** runtime for training. In the settings cell, `RETRAIN = False` loads the saved weights from `models/`
+and gives the same results as the demo. `RETRAIN = True` trains two new models inside that Colab session (a few minutes
+each); the repo is not changed, and its numbers will differ slightly from the saved weights.
+
+## Results of the saved weights
+
+Measured on four forms filled in by hand with made-up data, photographed with an iPhone, one writer (36 rows, 856
+characters). These are small-sample numbers.
+
+| Measure | Result |
+| --- | --- |
+| Characters read correctly, before any rules | 848 / 856 (99.1%) |
+| Digits / letters | 737 / 740 (99.6%) and 111 / 116 (95.7%) |
+| Rows auto-posted after the rules | 29 / 36, none with an error |
+
+On 60 synthetic logs the straight-through rate is 60.9% clean, 28.9% phone-like and 8.5% rough, with 3 clean-condition
+rows auto-posted with an error (none a mileage error). See cells 15, 21, 24 and 36 of the full notebook.
+
+## Known limits
+
+- The whole form must be visible, flat and in reasonable light. A photo that cannot be straightened is rejected.
+- Only Form ML-7 is supported.
+- Digits the model finds borderline (for example 0 versus 6) can change between Colab sessions, because the photo is
+  straightened slightly differently each time. The rules are what catch these.
+- The visit schedule is checked per employee, not per date.
 
 ## Data
 
-- **EMNIST ByClass**, digits and capital letters only (36 classes). Lowercase is dropped because the form only allows capitals.
-- Train 480,594 / validation 53,399 / test 89,264 characters (roughly 2 digits for every letter).
-- **Synthetic test logs:** 60 filled Form ML-7 images with ground truth, 20 each under three conditions (clean, phone-like, rough). Handwriting comes only from the EMNIST **test** split, so no training image appears in a test log.
-- **Real test form:** Form ML-7 printed, filled in by hand with made-up trips, photographed with an iPhone.
-- No real mileage logs or reimbursement documents are used anywhere in this project. Employee IDs and client codes are made up.
-
-## Model
-
-- CNN: Conv(32) > ReLU > MaxPool > Conv(64) > ReLU > MaxPool > Linear(128) > ReLU > Dropout(0.3) > Linear(36) > log_softmax (2 convolutional + 2 fully connected layers, 424,996 parameters)
-- Adam, learning rate 0.001, NLLLoss with class weights (letters are rarer than digits), 5 epochs, batch size 128
-- Main model is trained with augmentation: random tilt, shift, scale, shear, thicker or thinner strokes, and blur
-
-## Results
-
-Every number states the condition it was measured under.
-
-**Isolated EMNIST test characters (clean, centered, no form), baseline model:**
-
-| | Free choice (36 classes) | Restricted by field |
-| --- | --- | --- |
-| Digits | 93.3% | 99.3% |
-| Letters | 89.9% | 97.8% |
-
-**Synthetic Form ML-7 logs, 20 logs per condition, raw accuracy before any rules:**
-
-| Condition | Model | Digit acc. | Letter acc. | Field acc. | Odometer 6 of 6 right |
-| --- | --- | --- | --- | --- | --- |
-| Clean | baseline | 98.2% | 93.7% | 89.4% | 87.4% |
-| Clean | augmented | 98.7% | 95.7% | 92.4% | 91.4% |
-| Phone | baseline | 94.4% | 87.5% | 74.4% | 68.4% |
-| Phone | augmented | 96.7% | 91.3% | 83.1% | 80.5% |
-| Rough | baseline | 88.0% | 74.7% | 53.5% | 45.8% |
-| Rough | augmented | 92.0% | 83.5% | 67.0% | 63.5% |
-
-**Cell extraction (separate from recognition):** 60 of 60 logs registered. Only 2 boxes with handwriting (out of about 10,000 characters) came out empty, both in rough logs.
-
-**Per-row decisions after the rules (augmented model, synthetic logs):**
-
-| Condition | Rows | Auto-posted | Straight-through rate | Auto-posted with an error | Auto-posted with a mileage error | Reviewed but correct |
-| --- | --- | --- | --- | --- | --- | --- |
-| Clean | 151 | 91 | 60.3% | 1 (1.1%) | 0 | 7 |
-| Phone | 128 | 26 | 20.3% | 0 | 0 | 2 |
-| Rough | 130 | 6 | 4.6% | 0 | 0 | 0 |
-
-**Real handwriting (1 form, 9 rows, printed Form ML-7, iPhone photo, augmented model):**
-
-- Characters 210/214 (98.1%): digits 185/185 (100%), letters 25/29 (86.2%). Fields fully correct: 45/48.
-- Decision: 6 of 9 rows AUTO-POST, 3 to REVIEW. The 3 reviewed rows are exactly the 3 rows with a misread client code (caught by the visit-schedule check). No row was auto-posted with an error.
-
-One form is a small sample; more hand-filled forms are needed for a reliable real-handwriting number.
-
-## Validation rules
-
-- Employee ID exists in the HR master list
-- Week ending is a valid date, a Sunday, not in the future, and within the last 60 days
-- Trip dates are valid and fall inside the week ending
-- Client code is on the employee's visit schedule
-- Miles = odometer end - start, and end is after start
-- Odometer start is not before the previous row's end
-- A trip over 300 miles is flagged as implausible
-- Total miles = sum of the rows
-- Any character with confidence below 0.50 is flagged
-
-**Per-row policy:** a row is auto-posted only if none of its checks fail. A problem with the employee ID or week ending sends the whole log to review. A wrong total is blamed on the rows already flagged; if no row is flagged, the whole log goes to review.
-
-The HR master list and visit schedule are made-up stand-ins (`assets/reference_data.json`). The system cannot tell a misread from a clinician's own mistake (for example Figure 1, row 5: 42 miles written, 47 by the odometers); both go to review, which is the safe outcome.
-
-## Known limitations
-
-- Real-handwriting results come from one form; handwriting styles not in EMNIST (crossed 7s, some K shapes) are read less reliably.
-- Ink that crosses a box line gets partly erased (for example, a 0 losing its bottom).
-- Two digits crowding into each other across a box border can produce a broken crop.
-- Paper that is not flat can shift the boxes slightly after straightening, mostly at the right edge (MILES column).
-- Assumes the whole form is visible in the photo. If it isn't, the reader stops with an error instead of guessing.
-- A misread client code that happens to be another client on the same schedule is not caught (the one auto-posted error on clean synthetic logs was not a mileage error).
-
-## Team
-
-| Name | Role |
-| --- | --- |
-| Liliette Morejon Averhoff | Data |
-| Priscila | Lead Product |
-| Yasori | QA |
-
-## Sources and AI use
-
-- The synthetic log generator is our own version, adapted from the design of the instructor's `make_log_samples.py`.
-- Claude (Anthropic) was used as a coding assistant for the data loader, generator, registration and extraction code, training loop, evaluation cells, validation rules and the demo script. All code was reviewed, run and tested by the team.
-- No OCR engine, document model or LLM is used to read the forms. The reader is our own CNN trained on EMNIST.
+No real logs are used anywhere. All forms are generated programmatically or filled in by hand with made-up data.
