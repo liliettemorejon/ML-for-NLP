@@ -1,0 +1,10 @@
+# Packages the notebooks use. Google Colab already has all of these except pillow-heif,
+# which the demo installs itself. For running outside Colab: pip install -r requirements.txt
+torch
+numpy
+scipy
+pandas
+matplotlib
+opencv-python-headless
+Pillow
+pillow-heif
