@@ -55,6 +55,9 @@ in the demo's settings cell to turn this off.
 | `models/` | Trained weights: `char_cnn_aug_best.pt` (used by the demo) and `char_cnn_best.pt` (baseline) |
 | `samples/` | Photos of made-up, hand-filled forms to try the demo on |
 | `requirements.txt` | Python packages, for running outside Colab |
+| `Confusion_Matrix_Group4.ipynb` | Confusion analysis: loads the saved weights and reads the EMNIST test split (nothing is trained) |
+| `confusion_matrix_augmented.png`, `confusion_matrix_augmented.csv`, `confusion_matrix_baseline.csv` | The confusion matrices from that notebook |
+| `confusion_analysis_summary.md` | Written summary of the confusion analysis |
 
 ## The full notebook (training and evaluation)
 
@@ -77,6 +80,24 @@ characters). These are small-sample numbers.
 
 On 60 synthetic logs the straight-through rate is 60.9% clean, 28.9% phone-like and 8.5% rough, with 3 clean-condition
 rows auto-posted with an error (none a mileage error). See cells 15, 21, 24 and 36 of the full notebook.
+
+## Confusion analysis
+
+[![Open the confusion notebook in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/liliettemorejon/ML-for-NLP/blob/main/Confusion_Matrix_Group4.ipynb)
+
+Which characters does the model mix up? Measured on the EMNIST ByClass test split (36 classes, 89,264 characters the
+model never saw in training), raw reads before any rule. The notebook only loads the saved weights from `models/`, so it
+does not change them. Full write-up: `confusion_analysis_summary.md`.
+
+| Model | All characters | Digits | Letters |
+| --- | --- | --- | --- |
+| Augmented (used by the demo) | 91.03% | 94.98% | 83.72% |
+| Baseline | 91.71% | 92.74% | 89.81% |
+
+- 87% of the augmented model's errors are a digit and a look-alike letter (O read as 0, I as 1, S as 5, 2 as Z).
+  Only 0.6% of digits are read as a different digit.
+- The pipeline restricts each form field to digits or letters, which avoids most of these confusions on the form.
+- This is clean EMNIST data: it does not include segmentation errors or photo-quality problems.
 
 ## Known limits
 
